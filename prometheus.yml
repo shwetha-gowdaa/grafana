@@ -36,18 +36,18 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets:
-          - frontend:3000  # Assuming Prometheus metrics are exposed on port 8000 for frontend
+          - frontend:3000  # Assuming Prometheus metrics are exposed on port 3000 for frontend
 
   # Scrape backend service
   - job_name: backend
     scrape_interval: 5s
     static_configs:
       - targets:
-          - backend:5000  # Assuming Prometheus metrics are exposed on port 8000 for backend
+          - backend:5000  # Assuming Prometheus metrics are exposed on port 5000 for backend
 
-  # Scrape PostgreSQL metrics (via Postgres Exporter)
-  - job_name: postgres
+  # Scrape PostgreSQL metrics from PostgreSQL Exporter
+  - job_name: 'postgres'
     scrape_interval: 5s
     static_configs:
       - targets:
-          - db:9187  # Assuming a Postgres Exporter is running and exposing metrics on port 9187
+          - postgres-exporter:9187  # PostgreSQL Exporter exposing metrics on port 9187

@@ -1,5 +1,5 @@
 version: '3.8'
- 
+
 services:
   # Frontend service
   frontend:
@@ -8,7 +8,7 @@ services:
       - "3000:3000"
     networks:
       - grafana_app-network
- 
+
   # Backend service
   backend:
     build: ./backend
@@ -18,8 +18,8 @@ services:
       - grafana_app-network
     depends_on:
       - db
- 
-  # Database service
+
+  # Database service (PostgreSQL)
   db:
     image: postgres:13
     environment:
@@ -30,7 +30,7 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - grafana_app-network
- 
+
   # cAdvisor to collect Docker container metrics
   cadvisor:
     image: google/cadvisor:latest
@@ -45,7 +45,7 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     networks:
       - grafana_app-network
- 
+
   # Prometheus to scrape metrics
   prometheus:
     image: prom/prometheus
@@ -61,9 +61,10 @@ services:
       - cadvisor
       - node-exporter
       - pushgateway
+      - postgres_exporter  # Add dependency on postgres_exporter
     networks:
       - grafana_app-network
- 
+
   # Grafana to visualize metrics
   grafana:
     image: grafana/grafana
@@ -77,7 +78,7 @@ services:
       - prometheus
     networks:
       - grafana_app-network
- 
+
   # Pushgateway to collect custom metrics
   pushgateway:
     image: prom/pushgateway
@@ -87,7 +88,7 @@ services:
       - "9091:9091"
     networks:
       - grafana_app-network
- 
+
   # Node Exporter to collect host metrics
   node-exporter:
     image: prom/node-exporter:latest
@@ -97,7 +98,20 @@ services:
       - 9100
     networks:
       - grafana_app-network
- 
+
+  # PostgreSQL Exporter to expose PostgreSQL metrics
+  postgres_exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@db:5432/mydb?sslmode=disable"
+    ports:
+      - "9187:9187"  # Expose Postgres exporter metrics on port 9187
+    networks:
+      - grafana_app-network
+    depends_on:
+      - db
+
 networks:
   grafana_app-network:
     driver: bridge
