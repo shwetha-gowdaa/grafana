@@ -1,22 +1,25 @@
 version: '3.8'
-
+ 
 services:
+  # Frontend service
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
     networks:
-      - app-network
-
+      - grafana_app-network
+ 
+  # Backend service
   backend:
     build: ./backend
     ports:
       - "5000:5000"
     networks:
-      - app-network
+      - grafana_app-network
     depends_on:
       - db
-
+ 
+  # Database service
   db:
     image: postgres:13
     environment:
@@ -26,8 +29,75 @@ services:
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - app-network
-
+      - grafana_app-network
+ 
+  # cAdvisor to collect Docker container metrics
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - grafana_app-network
+ 
+  # Prometheus to scrape metrics
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - cadvisor
+      - node-exporter
+      - pushgateway
+    networks:
+      - grafana_app-network
+ 
+  # Grafana to visualize metrics
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "3001:3000"  # Expose Grafana on a different port (3001) to avoid conflict with frontend
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set admin password
+    depends_on:
+      - prometheus
+    networks:
+      - grafana_app-network
+ 
+  # Pushgateway to collect custom metrics
+  pushgateway:
+    image: prom/pushgateway
+    container_name: pushgateway
+    restart: always
+    ports:
+      - "9091:9091"
+    networks:
+      - grafana_app-network
+ 
+  # Node Exporter to collect host metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    expose:
+      - 9100
+    networks:
+      - grafana_app-network
+ 
 networks:
-  app-network:
+  grafana_app-network:
     driver: bridge

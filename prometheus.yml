@@ -1,0 +1,53 @@
+global:
+  scrape_interval: 15s  # Default scrape interval
+  evaluation_interval: 15s  # Default evaluation interval
+
+scrape_configs:
+  # Scrape Prometheus itself
+  - job_name: prometheus
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  # Scrape cAdvisor for Docker container metrics
+  - job_name: cadvisor
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - cadvisor:8080
+
+  # Scrape Pushgateway for custom metrics
+  - job_name: pushgateway
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - pushgateway:9091
+
+  # Scrape Node Exporter for host metrics
+  - job_name: node-exporter
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - node-exporter:9100
+
+  # Scrape frontend service
+  - job_name: frontend
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - frontend:3000  # Assuming Prometheus metrics are exposed on port 8000 for frontend
+
+  # Scrape backend service
+  - job_name: backend
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - backend:5000  # Assuming Prometheus metrics are exposed on port 8000 for backend
+
+  # Scrape PostgreSQL metrics (via Postgres Exporter)
+  - job_name: postgres
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - db:9187  # Assuming a Postgres Exporter is running and exposing metrics on port 9187
