@@ -61,7 +61,7 @@ services:
       - cadvisor
       - node-exporter
       - pushgateway
-      - postgres_exporter  # Add dependency on postgres_exporter
+      - postgres_exporter
     networks:
       - grafana_app-network
 
@@ -71,11 +71,12 @@ services:
     container_name: grafana
     restart: always
     ports:
-      - "3001:3000"  # Expose Grafana on a different port (3001) to avoid conflict with frontend
+      - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set admin password
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
+      - loki
     networks:
       - grafana_app-network
 
@@ -106,11 +107,39 @@ services:
     environment:
       DATA_SOURCE_NAME: "postgresql://user:password@db:5432/mydb?sslmode=disable"
     ports:
-      - "9187:9187"  # Expose Postgres exporter metrics on port 9187
+      - "9187:9187"
     networks:
       - grafana_app-network
     depends_on:
       - db
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+      - ./loki-data:/loki
+      - ./loki-rules:/loki/rules # Ensure the rules directory is properly mounted
+    networks:
+      - grafana_app-network
+ 
+ #Promtail for log scraping
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: always
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./logs:/var/log/nginx
+    command:
+      - -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - grafana_app-network
 
 networks:
   grafana_app-network:
