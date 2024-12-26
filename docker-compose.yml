@@ -133,7 +133,7 @@ services:
     restart: always
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml:ro
-      - ./logs:/var/log/nginx
+      -  /var/log/nginx:/var/log/nginx:ro
     command:
       - -config.file=/etc/promtail/config.yml
     depends_on:
